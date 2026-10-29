@@ -1,61 +1,73 @@
-# syntax=docker/dockerfile:1@sha256:4edf897a3ffa55b89f906fc8cc78afdb3f1834cc9c7083565e611a8a7d5fe99e
-FROM --platform=$BUILDPLATFORM node:24.21.0-alpine@sha256:ebfe2f90462722a7a4de65e91990e97fe0d401c70e0e762c5b53302f905ec1c1 AS frontendbuilder
+# Stage 1: Build the frontend
 
-WORKDIR /build
+# Use Node.js 24 to build Vikunja's frontend
+FROM node:24-alpine AS frontend-build
 
-ENV PNPM_CACHE_FOLDER=.cache/pnpm/
+# Set the working directory inside the container
+WORKDIR /app
+
+# Copy dependency manifests first so Docker can cache dependency installation
+COPY frontend/package.json frontend/pnpm-lock.yaml frontend/pnpm-workspace.yaml ./
+
+# Skip unnecessary browser downloads and enable pnpm through Corepack
 ENV PUPPETEER_SKIP_DOWNLOAD=true
 ENV CYPRESS_INSTALL_BINARY=0
 
-COPY frontend/pnpm-lock.yaml frontend/package.json frontend/pnpm-workspace.yaml ./
-RUN npm install -g corepack && corepack enable && \
+RUN npm install -g corepack && \
+    corepack enable && \
     pnpm install --frozen-lockfile
+
+# Copy the remaining frontend source code
 COPY frontend/ ./
+
+# Compile the frontend into /app/dist
 ARG RELEASE_VERSION=dev
-RUN echo "{\"VERSION\": \"${RELEASE_VERSION/-g/-}\"}" > src/version.json && pnpm run build
+RUN pnpm run build
 
-FROM --platform=$BUILDPLATFORM ghcr.io/techknowlogick/xgo:go-1.27.x@sha256:7d5cab968132bf21285686bde17e902e0af080a16d08b439deb7265b276ac6f9 AS apibuilder
+# Stage 2: Build the backend
 
+# Use Go 1.27 to compile Vikunja's backend
+FROM golang:1.27-alpine AS backend-build
+
+# Install the C compiler and development tools required by CGO
+RUN apk add --no-cache build-base
+
+# Enable CGO for packages that depend on C code
+ENV CGO_ENABLED=1
+
+WORKDIR /app
+
+# Copy the Vikunja application source code
+COPY . .
+
+# Copy the compiled frontend into the directory embedded by Go
+COPY --from=frontend-build /app/dist ./frontend/dist
+
+# Pass the release version to Vikunja's build process
+ARG RELEASE_VERSION=dev
+ENV RELEASE_VERSION=${RELEASE_VERSION}
+
+# Install Mage, Vikunja's build tool, and compile the backend
 RUN go install github.com/magefile/mage@latest && \
-    mv /go/bin/mage /usr/local/go/bin
+    /go/bin/mage build
 
-WORKDIR /go/src/code.vikunja.io/api
-COPY . ./
-COPY --from=frontendbuilder /build/dist ./frontend/dist
 
-ARG TARGETOS TARGETARCH TARGETVARIANT RELEASE_VERSION
-ENV RELEASE_VERSION=$RELEASE_VERSION
+# Stage 3: Run the application
 
-RUN export PATH=$PATH:$GOPATH/bin && \
-	mage build:clean && \
-    (cd build && mage release:xgo vikunja "${TARGETOS}/${TARGETARCH}/${TARGETVARIANT}")
+# Use a lightweight Alpine image for the runtime
+FROM alpine:3.22
 
-RUN mkdir -p /tmp && chmod 1777 /tmp
+# Set the working directory for the application
+WORKDIR /app
 
-#  ┬─┐┬ ┐┌┐┐┌┐┐┬─┐┬─┐
-#  │┬┘│ │││││││├─ │┬┘
-#  ┘└┘┘─┘┘└┘┘└┘┴─┘┘└┘
+# Install CA certificates for trusted HTTPS connections
+RUN apk add --no-cache ca-certificates
 
-# The actual image
-FROM scratch
+# Copy only the compiled executable from the backend stage
+COPY --from=backend-build /app/vikunja ./vikunja
 
-LABEL org.opencontainers.image.authors='maintainers@vikunja.io'
-LABEL org.opencontainers.image.url='https://vikunja.io'
-LABEL org.opencontainers.image.documentation='https://vikunja.io/docs'
-LABEL org.opencontainers.image.source='https://code.vikunja.io/vikunja'
-LABEL org.opencontainers.image.licenses='AGPLv3'
-LABEL org.opencontainers.image.title='Vikunja'
-
-WORKDIR /app/vikunja
-ENTRYPOINT [ "/app/vikunja/vikunja" ]
+# Document the port Vikunja listens on
 EXPOSE 3456
 
-COPY --from=apibuilder --chown=1000:1000 --chmod=1777 /tmp /tmp
-
-USER 1000
-
-ENV VIKUNJA_SERVICE_ROOTPATH=/app/vikunja/
-ENV VIKUNJA_DATABASE_PATH=/db/vikunja.db
-
-COPY --from=apibuilder /build/vikunja-* vikunja
-COPY --from=apibuilder /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/
+# Start Vikunja when the container launches
+CMD ["./vikunja"]
