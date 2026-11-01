@@ -47,3 +47,4 @@ resource "aws_ecr_repository" "app" {
     Name = "${var.project_name}-ecr"
   }
 }
+
