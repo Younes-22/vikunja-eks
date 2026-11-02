@@ -30,6 +30,13 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v5
 
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v4
+
+      - name: Initialize Terraform modules
+        run: terraform init -backend=false
+        working-directory: ./terraform
+
       - name: Scan Terraform configuration with Trivy
         uses: aquasecurity/trivy-action@v0.36.0
         with:
