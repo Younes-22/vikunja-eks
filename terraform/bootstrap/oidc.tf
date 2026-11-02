@@ -132,7 +132,9 @@ data "aws_iam_policy_document" "github_terraform" {
       "ec2:ModifySubnetAttribute",
       "ec2:ReleaseAddress",
       "ec2:RevokeSecurityGroupEgress",
-      "ec2:RevokeSecurityGroupIngress"
+      "ec2:RevokeSecurityGroupIngress",
+      "ec2:DescribeVpcAttribute",
+      "ec2:DescribeAddressesAttribute"
     ]
 
     resources = ["*"]
