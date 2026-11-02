@@ -84,6 +84,8 @@ locals {
 
   nodegroup_arn = "arn:aws:eks:eu-west-2:${data.aws_caller_identity.current.account_id}:nodegroup/eks-cluster/*/*"
   addon_arn     = "arn:aws:eks:eu-west-2:${data.aws_caller_identity.current.account_id}:addon/eks-cluster/*/*"
+
+  nodegroup_service_linked_role_arn = "arn:aws:iam::${data.aws_caller_identity.current.account_id}:role/aws-service-role/eks-nodegroup.amazonaws.com/AWSServiceRoleForAmazonEKSNodegroup"
 }
 
 # GitHub Actions Terraform permissions
@@ -230,7 +232,8 @@ data "aws_iam_policy_document" "github_terraform" {
 
     resources = [
       local.cluster_role_arn,
-      local.node_role_arn
+      local.node_role_arn,
+      local.nodegroup_service_linked_role_arn
     ]
   }
 
