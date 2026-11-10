@@ -1,5 +1,5 @@
 resource "aws_s3_bucket" "terraform_state" {
-  bucket = "vikunja-terraform-state-469465348568"
+  bucket = "vikunja-terraform-state-667998414355"
 
   tags = {
     Name = "${var.project_name}-s3-bucket"

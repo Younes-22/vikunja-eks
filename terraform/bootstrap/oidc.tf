@@ -74,7 +74,7 @@ resource "aws_iam_role" "github_ecr" {
 data "aws_caller_identity" "current" {}
 
 locals {
-  terraform_state_bucket = "vikunja-terraform-state-469465348568"
+  terraform_state_bucket = "vikunja-terraform-state-667998414355"
   terraform_state_key    = "vikunja/terraform.tfstate"
 
   cluster_role_arn = "arn:aws:iam::${data.aws_caller_identity.current.account_id}:role/eks-cluster-example"
@@ -251,6 +251,24 @@ data "aws_iam_policy_document" "github_terraform" {
       variable = "iam:PassedToService"
       values   = ["eks.amazonaws.com", "ec2.amazonaws.com"]
     }
+  }
+
+  # Manage EKS access entries and access policies
+  statement {
+    sid    = "ManageEksAccessEntries"
+    effect = "Allow"
+
+    actions = [
+      "eks:CreateAccessEntry",
+      "eks:DescribeAccessEntry",
+      "eks:DeleteAccessEntry",
+      "eks:ListAccessEntries",
+      "eks:AssociateAccessPolicy",
+      "eks:DisassociateAccessPolicy",
+      "eks:ListAssociatedAccessPolicies"
+    ]
+
+    resources = ["*"]
   }
 
   # Access the remote Terraform state bucket
