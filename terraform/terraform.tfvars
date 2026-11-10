@@ -1,0 +1,1 @@
+eks_viewer_principal_arn = "arn:aws:iam::667998414355:user/aws-tmp"
