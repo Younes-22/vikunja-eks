@@ -392,7 +392,7 @@ data "aws_iam_policy_document" "github_terraform" {
     }
   }
 
-    # Manage Route 53 hosted zones
+  # Manage Route 53 hosted zones
   statement {
     sid    = "ManageRoute53HostedZones"
     effect = "Allow"
