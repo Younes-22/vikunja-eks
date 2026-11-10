@@ -13,11 +13,13 @@ spec:
     helm:
       values: |
         service:
-          type: LoadBalancer
+          spec:
+            type: LoadBalancer
           annotations:
             service.beta.kubernetes.io/aws-load-balancer-type: "external"
             service.beta.kubernetes.io/aws-load-balancer-nlb-target-type: "ip"
             service.beta.kubernetes.io/aws-load-balancer-scheme: "internet-facing"
+
   destination:
     server: https://kubernetes.default.svc
     namespace: traefik
