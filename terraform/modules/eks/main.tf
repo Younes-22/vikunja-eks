@@ -162,3 +162,19 @@ resource "aws_eks_addon" "pod_identity_agent" {
   cluster_name = aws_eks_cluster.this.name
   addon_name   = "eks-pod-identity-agent"
 }
+
+resource "aws_eks_access_entry" "console_admin_view" {
+  cluster_name  = aws_eks_cluster.this.name
+  principal_arn = "arn:aws:iam::667998414355:role/managed/AccountFullAccessRole"
+  type          = "STANDARD"
+}
+
+resource "aws_eks_access_policy_association" "console_admin_view" {
+  cluster_name  = aws_eks_cluster.this.name
+  principal_arn = aws_eks_access_entry.console_admin_view.principal_arn
+  policy_arn    = "arn:aws:eks::aws:cluster-access-policy/AmazonEKSAdminViewPolicy"
+
+  access_scope {
+    type = "cluster"
+  }
+}
