@@ -210,7 +210,10 @@ data "aws_iam_policy_document" "github_terraform" {
     condition {
       test     = "StringEquals"
       variable = "iam:AWSServiceName"
-      values   = ["eks.amazonaws.com"]
+      values = [
+        "eks.amazonaws.com",
+        "eks-nodegroup.amazonaws.com"
+      ]
     }
   }
 
