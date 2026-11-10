@@ -392,7 +392,23 @@ data "aws_iam_policy_document" "github_terraform" {
     }
   }
 
+    # Manage Route 53 hosted zones
+  statement {
+    sid    = "ManageRoute53HostedZones"
+    effect = "Allow"
 
+    actions = [
+      "route53:CreateHostedZone",
+      "route53:DeleteHostedZone",
+      "route53:GetHostedZone",
+      "route53:ListHostedZones",
+      "route53:ListHostedZonesByName",
+      "route53:ChangeTagsForResource",
+      "route53:ListTagsForResource"
+    ]
+
+    resources = ["*"]
+  }
 
 }
 
