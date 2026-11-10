@@ -53,6 +53,7 @@ resource "aws_iam_role_policy" "github_ecr_push" {
         Effect = "Allow"
         Action = [
           "ecr:BatchCheckLayerAvailability",
+          "ecr:BatchGetImage",
           "ecr:CompleteLayerUpload",
           "ecr:InitiateLayerUpload",
           "ecr:PutImage",
@@ -240,6 +241,7 @@ data "aws_iam_policy_document" "github_terraform" {
     actions = [
       "iam:AttachRolePolicy",
       "iam:CreateRole",
+      "iam:GetRole",
       "iam:ListInstanceProfilesForRole",
       "iam:DeleteRole",
       "iam:DetachRolePolicy",
