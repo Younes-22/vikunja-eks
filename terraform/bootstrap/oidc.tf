@@ -86,7 +86,7 @@ locals {
   addon_arn     = "arn:aws:eks:eu-west-2:${data.aws_caller_identity.current.account_id}:addon/eks-cluster/*/*"
 
   nodegroup_service_linked_role_arn = "arn:aws:iam::${data.aws_caller_identity.current.account_id}:role/aws-service-role/eks-nodegroup.amazonaws.com/AWSServiceRoleForAmazonEKSNodegroup"
-  ebs_csi_role_arn                  = "arn:aws:iam::${data.aws_caller_identity.current.account_id}:role/eks-ebs-csi-driver-role"
+  ebs_csi_role_arn = "arn:aws:iam::${data.aws_caller_identity.current.account_id}:role/eks-ebs-csi-driver-role"
 }
 
 # GitHub Actions Terraform permissions
@@ -194,6 +194,24 @@ data "aws_iam_policy_document" "github_terraform" {
       local.nodegroup_arn
     ]
   }
+
+  # Allow EKS to create its service-linked role
+  statement {
+  sid    = "CreateEksServiceLinkedRole"
+  effect = "Allow"
+
+  actions = [
+    "iam:CreateServiceLinkedRole"
+  ]
+
+  resources = ["*"]
+
+  condition {
+    test     = "StringEquals"
+    variable = "iam:AWSServiceName"
+    values   = ["eks.amazonaws.com"]
+  }
+}
 
   # EKS add-on operations
   statement {
