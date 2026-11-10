@@ -241,7 +241,6 @@ data "aws_iam_policy_document" "github_terraform" {
     actions = [
       "iam:AttachRolePolicy",
       "iam:CreateRole",
-      "iam:GetRole",
       "iam:ListInstanceProfilesForRole",
       "iam:DeleteRole",
       "iam:DetachRolePolicy",
