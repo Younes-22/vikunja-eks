@@ -54,20 +54,28 @@ RUN go install github.com/magefile/mage@latest && \
 
 # Stage 3: Run the application
 
+# Stage 3: Run the application
+
 # Use a lightweight Alpine image for the runtime
 FROM alpine:3.22
 
-# Set the working directory for the application
+# Set the working directory
 WORKDIR /app
 
-# Install CA certificates for trusted HTTPS connections
-RUN apk add --no-cache ca-certificates
+# Install CA certificates and create a non-root user/group
+RUN apk add --no-cache ca-certificates && \
+    addgroup -S vikunja && \
+    adduser -S -G vikunja vikunja && \
+    chown vikunja:vikunja /app
 
-# Copy only the compiled executable from the backend stage
-COPY --from=backend-build /app/vikunja ./vikunja
+# Copy the compiled executable
+COPY --from=backend-build --chown=vikunja:vikunja /app/vikunja ./vikunja
+
+# Switch away from root
+USER vikunja
 
 # Document the port Vikunja listens on
 EXPOSE 3456
 
-# Start Vikunja when the container launches
+# Start the application
 CMD ["./vikunja"]
