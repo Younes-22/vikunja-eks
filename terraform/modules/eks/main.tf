@@ -84,6 +84,33 @@ resource "aws_iam_role_policy_attachment" "AmazonEKS_CNI_Policy" {
   role       = aws_iam_role.node.name
 }
 
+# IAM role for the EBS CSI driver
+resource "aws_iam_role" "ebs_csi" {
+  name = "eks-ebs-csi-driver-role"
+
+  assume_role_policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Effect = "Allow"
+        Principal = {
+          Service = "pods.eks.amazonaws.com"
+        }
+        Action = [
+          "sts:AssumeRole",
+          "sts:TagSession"
+        ]
+      }
+    ]
+  })
+}
+
+# Permissions for managing EBS volumes
+resource "aws_iam_role_policy_attachment" "ebs_csi" {
+  role       = aws_iam_role.ebs_csi.name
+  policy_arn = "arn:aws:iam::aws:policy/AmazonEBSCSIDriverPolicyV2"
+}
+
 resource "aws_eks_node_group" "this" {
   cluster_name    = aws_eks_cluster.this.name
   node_group_name = "example"
@@ -128,4 +155,10 @@ resource "aws_eks_addon" "coredns" {
 resource "aws_eks_addon" "kube_proxy" {
   cluster_name = aws_eks_cluster.this.name
   addon_name   = "kube-proxy"
+}
+
+# Enables EKS Pod Identity
+resource "aws_eks_addon" "pod_identity_agent" {
+  cluster_name = aws_eks_cluster.this.name
+  addon_name   = "eks-pod-identity-agent"
 }
