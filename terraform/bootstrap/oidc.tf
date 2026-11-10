@@ -358,7 +358,9 @@ data "aws_iam_policy_document" "github_terraform" {
 
     resources = [
       "arn:aws:iam::${data.aws_caller_identity.current.account_id}:policy/eks-cluster-load-balancer-controller",
-      "arn:aws:iam::${data.aws_caller_identity.current.account_id}:role/eks-cluster-load-balancer-controller"
+      "arn:aws:iam::${data.aws_caller_identity.current.account_id}:role/eks-cluster-load-balancer-controller",
+      "arn:aws:iam::${data.aws_caller_identity.current.account_id}:policy/eks-cluster-external-dns",
+      "arn:aws:iam::${data.aws_caller_identity.current.account_id}:role/eks-cluster-external-dns"
     ]
   }
   statement {
@@ -383,6 +385,22 @@ data "aws_iam_policy_document" "github_terraform" {
 
     resources = [
       "arn:aws:iam::${data.aws_caller_identity.current.account_id}:role/eks-cluster-load-balancer-controller"
+    ]
+
+    condition {
+      test     = "StringEquals"
+      variable = "iam:PassedToService"
+      values   = ["pods.eks.amazonaws.com"]
+    }
+  }
+
+  statement {
+    sid     = "PassExternalDNSRole"
+    effect  = "Allow"
+    actions = ["iam:PassRole"]
+
+    resources = [
+      "arn:aws:iam::${data.aws_caller_identity.current.account_id}:role/eks-cluster-external-dns"
     ]
 
     condition {

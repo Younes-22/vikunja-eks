@@ -13,3 +13,8 @@ variable "eks_viewer_principal_arn" {
   type        = string
   default     = null
 }
+
+variable "route53_zone_arn" {
+  description = "ARN of the Route 53 hosted zone managed by ExternalDNS"
+  type        = string
+}
