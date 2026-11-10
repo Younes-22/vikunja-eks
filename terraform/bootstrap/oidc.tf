@@ -401,6 +401,7 @@ data "aws_iam_policy_document" "github_terraform" {
       "route53:CreateHostedZone",
       "route53:DeleteHostedZone",
       "route53:GetHostedZone",
+      "route53:GetChange",
       "route53:ListHostedZones",
       "route53:ListHostedZonesByName",
       "route53:ChangeTagsForResource",
