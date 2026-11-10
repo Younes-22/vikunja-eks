@@ -326,6 +326,74 @@ data "aws_iam_policy_document" "github_terraform" {
       "arn:aws:s3:::${local.terraform_state_bucket}/${local.terraform_state_key}.tflock"
     ]
   }
+
+
+  # Manage the AWS Load Balancer Controller IAM resources
+  statement {
+    sid    = "ManageLoadBalancerControllerIam"
+    effect = "Allow"
+
+    actions = [
+      "iam:CreatePolicy",
+      "iam:DeletePolicy",
+      "iam:GetPolicy",
+      "iam:GetPolicyVersion",
+      "iam:ListPolicyVersions",
+      "iam:CreatePolicyVersion",
+      "iam:DeletePolicyVersion",
+      "iam:SetDefaultPolicyVersion",
+      "iam:TagPolicy",
+      "iam:UntagPolicy",
+      "iam:CreateRole",
+      "iam:DeleteRole",
+      "iam:GetRole",
+      "iam:UpdateAssumeRolePolicy",
+      "iam:AttachRolePolicy",
+      "iam:DetachRolePolicy",
+      "iam:ListAttachedRolePolicies",
+      "iam:ListRolePolicies",
+      "iam:TagRole",
+      "iam:UntagRole"
+    ]
+
+    resources = [
+      "arn:aws:iam::${data.aws_caller_identity.current.account_id}:policy/eks-cluster-load-balancer-controller",
+      "arn:aws:iam::${data.aws_caller_identity.current.account_id}:role/eks-cluster-load-balancer-controller"
+    ]
+  }
+  statement {
+    sid    = "ManageEksPodIdentity"
+    effect = "Allow"
+
+    actions = [
+      "eks:CreatePodIdentityAssociation",
+      "eks:DescribePodIdentityAssociation",
+      "eks:DeletePodIdentityAssociation",
+      "eks:ListPodIdentityAssociations"
+    ]
+
+    resources = ["*"]
+  }
+
+
+  statement {
+    sid     = "PassLoadBalancerControllerRole"
+    effect  = "Allow"
+    actions = ["iam:PassRole"]
+
+    resources = [
+      "arn:aws:iam::${data.aws_caller_identity.current.account_id}:role/eks-cluster-load-balancer-controller"
+    ]
+
+    condition {
+      test     = "StringEquals"
+      variable = "iam:PassedToService"
+      values   = ["pods.eks.amazonaws.com"]
+    }
+  }
+
+
+
 }
 
 resource "aws_iam_policy" "github_terraform" {
