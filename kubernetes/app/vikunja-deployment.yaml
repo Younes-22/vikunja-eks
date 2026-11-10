@@ -1,0 +1,23 @@
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: vikunja
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: vikunja
+  template:
+    metadata:
+      labels:
+        app: vikunja
+    spec:
+      containers:
+        - name: vikunja
+          image: 469465348568.dkr.ecr.eu-west-2.amazonaws.com/vikunja:b23e545f97eb798a170636fa43e73b437b25c898
+          ports:
+            - containerPort: 3456
+          env:
+            - name: VIKUNJA_SERVICE_PUBLICURL
+              value: "https://eks.labs.younesblog.org/"
