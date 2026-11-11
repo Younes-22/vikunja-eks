@@ -176,7 +176,7 @@ resource "aws_eks_access_policy_association" "console_viewer" {
 
   cluster_name  = aws_eks_cluster.this.name
   principal_arn = aws_eks_access_entry.console_viewer[0].principal_arn
-  policy_arn    = "arn:aws:eks::aws:cluster-access-policy/AmazonEKSAdminViewPolicy"
+  policy_arn    = "arn:aws:eks::aws:cluster-access-policy/AmazonEKSClusterAdminPolicy"
 
   access_scope {
     type = "cluster"
