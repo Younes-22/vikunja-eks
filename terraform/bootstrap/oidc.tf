@@ -166,6 +166,7 @@ data "aws_iam_policy_document" "github_terraform" {
 
     actions = [
       "eks:DescribeCluster",
+      "eks:DescribeUpdate",
       "eks:DeleteCluster",
       "eks:UpdateClusterConfig",
       "eks:UpdateClusterVersion",
