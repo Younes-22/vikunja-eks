@@ -15,7 +15,7 @@ spec:
     spec:
       containers:
         - name: vikunja
-          image: 469465348568.dkr.ecr.eu-west-2.amazonaws.com/vikunja:b23e545f97eb798a170636fa43e73b437b25c898
+          image: 667998414355.dkr.ecr.eu-west-2.amazonaws.com/vikunja:ab953ce51bb91248c17f568fef5f93ea954973cb
           ports:
             - containerPort: 3456
           env:
