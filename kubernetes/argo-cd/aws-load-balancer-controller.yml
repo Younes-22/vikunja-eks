@@ -17,7 +17,7 @@ spec:
         - name: region
           value: eu-west-2
         - name: vpcId
-          value: vpc-007b1abf58fda6952
+          value: vpc-09299e8baff1d320f
         - name: serviceAccount.create
           value: "true"
         - name: serviceAccount.name
