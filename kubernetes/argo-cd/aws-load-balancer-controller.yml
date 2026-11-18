@@ -16,8 +16,9 @@ spec:
           value: eks-cluster
         - name: region
           value: eu-west-2
+        # Replace with the vpc_id from `terraform output vpc_id` after each build
         - name: vpcId
-          value: vpc-09299e8baff1d320f
+          value: VPC_ID
         - name: serviceAccount.create
           value: "true"
         - name: serviceAccount.name
