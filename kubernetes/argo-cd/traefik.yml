@@ -20,6 +20,14 @@ spec:
             service.beta.kubernetes.io/aws-load-balancer-nlb-target-type: "ip"
             service.beta.kubernetes.io/aws-load-balancer-scheme: "internet-facing"
 
+        # Expose Traefik metrics so Prometheus can scrape ingress traffic
+        metrics:
+          prometheus:
+            service:
+              enabled: true
+            serviceMonitor:
+              enabled: true
+
   destination:
     server: https://kubernetes.default.svc
     namespace: traefik
@@ -29,3 +37,5 @@ spec:
       selfHeal: true
     syncOptions:
       - CreateNamespace=true
+      # ServiceMonitor CRD comes from the monitoring app, which may sync later
+      - SkipDryRunOnMissingResource=true
