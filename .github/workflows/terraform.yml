@@ -14,10 +14,70 @@ permissions:
   id-token: write
   contents: read
 
+# Never run two Terraform deployments at the same time.
+# A second run waits for the first to finish instead of cancelling it mid-apply.
+concurrency:
+  group: terraform-deploy
+  cancel-in-progress: false
+
 jobs:
+  tflint:
+    name: TFLint
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v5
+
+      - name: Setup TFLint
+        uses: terraform-linters/setup-tflint@v6
+
+      - name: Initialise TFLint plugins
+        working-directory: ./terraform
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: tflint --init
+
+      - name: Run TFLint
+        working-directory: ./terraform
+        # Initial run: report findings without failing the pipeline.
+        # Remove continue-on-error once findings are fixed.
+        continue-on-error: true
+        run: tflint --recursive --config "$GITHUB_WORKSPACE/terraform/.tflint.hcl"
+
+  checkov:
+    name: Checkov Security Scan
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v5
+
+      - name: Run Checkov
+        uses: bridgecrewio/checkov-action@v12
+        with:
+          directory: terraform
+          framework: terraform
+          quiet: true
+          # Initial run: report findings without failing the pipeline.
+          # Switch to false once findings are fixed or skipped with reasons.
+          soft_fail: true
+          output_format: cli,sarif
+          output_file_path: console,checkov-results.sarif
+
+      - name: Upload Checkov results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: checkov-results
+          path: checkov-results.sarif
+          if-no-files-found: ignore
+
   terraform:
     name: Terraform Plan & Apply
     runs-on: ubuntu-latest
+    # Only deploy if the security scan and the linter passed
+    needs: [checkov, tflint]
 
     defaults:
       run:
@@ -41,9 +101,6 @@ jobs:
 
       - name: Verify AWS identity
         run: aws sts get-caller-identity
-
-      - name: Setup Terraform
-        uses: hashicorp/setup-terraform@v4
 
       - name: Terraform Init
         run: terraform init -input=false

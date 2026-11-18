@@ -16,6 +16,8 @@ spec:
           prometheusSpec:
             replicas: 1
             retention: 3d
+            # Scrape ServiceMonitors from any namespace (e.g. Traefik)
+            serviceMonitorSelectorNilUsesHelmValues: false
             resources:
               requests:
                 cpu: 200m
@@ -28,6 +30,54 @@ spec:
           replicas: 1
           persistence:
             enabled: false
+
+          # Admin credentials come from a Secret created outside Git:
+          # kubectl -n monitoring create secret generic grafana-admin \
+          #   --from-literal=admin-user=admin \
+          #   --from-literal=admin-password='<strong-password>'
+          admin:
+            existingSecret: grafana-admin
+            userKey: admin-user
+            passwordKey: admin-password
+
+          # Community dashboards, downloaded at startup. Defaults from the
+          # chart already cover cluster, node, namespace and pod resources.
+          dashboardProviders:
+            dashboardproviders.yaml:
+              apiVersion: 1
+              providers:
+                - name: default
+                  orgId: 1
+                  folder: ""
+                  type: file
+                  disableDeletion: false
+                  editable: true
+                  options:
+                    path: /var/lib/grafana/dashboards/default
+
+          dashboards:
+            default:
+              traefik:
+                gnetId: 17346
+                revision: 9
+                datasource: Prometheus
+
+          grafana.ini:
+            server:
+              domain: grafana.labs.younesblog.org
+              root_url: https://grafana.labs.younesblog.org
+
+          ingress:
+            enabled: true
+            ingressClassName: traefik
+            annotations:
+              cert-manager.io/cluster-issuer: letsencrypt
+            hosts:
+              - grafana.labs.younesblog.org
+            tls:
+              - secretName: grafana-tls
+                hosts:
+                  - grafana.labs.younesblog.org
           resources:
             requests:
               cpu: 100m

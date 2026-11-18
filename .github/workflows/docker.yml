@@ -13,7 +13,7 @@ on:
 
 permissions:
   id-token: write
-  contents: read
+  contents: write
 
 jobs:
   build-and-push:
@@ -68,3 +68,23 @@ jobs:
             "${ECR_REGISTRY}/${ECR_REPOSITORY}:${GITHUB_SHA}"
 
           docker push "${ECR_REGISTRY}/${ECR_REPOSITORY}:${GITHUB_SHA}"
+
+      - name: Update image tag in deployment manifest
+        env:
+          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+        run: |
+          sed -i "s|image: .*/${ECR_REPOSITORY}:.*|image: ${ECR_REGISTRY}/${ECR_REPOSITORY}:${GITHUB_SHA}|" \
+            kubernetes/app/vikunja-deployment.yaml
+
+      - name: Commit updated manifest
+        run: |
+          if git diff --quiet kubernetes/app/vikunja-deployment.yaml; then
+            echo "Manifest already up to date"
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add kubernetes/app/vikunja-deployment.yaml
+          git commit -m "Deploy vikunja image ${GITHUB_SHA::7} [skip ci]"
+          git pull --rebase origin main
+          git push origin HEAD:main

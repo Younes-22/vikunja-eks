@@ -8,6 +8,11 @@ variable "vpc_id" {
   type        = string
 }
 
+variable "vpc_cidr" {
+  description = "CIDR block of the VPC. Used to allow load balancer traffic to Traefik"
+  type        = string
+}
+
 variable "eks_viewer_principal_arn" {
   description = "IAM role ARN granted read-only access to Kubernetes resources"
   type        = string
