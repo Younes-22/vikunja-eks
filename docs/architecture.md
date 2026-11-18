@@ -155,8 +155,7 @@ flowchart TB
     repo[("GitHub repository")]
 
     subgraph gha["GitHub Actions, authenticated to AWS with OIDC"]
-        tf["terraform.yml<br/>fmt, validate, plan, apply"]
-        sec["security.yml<br/>Checkov scan of Terraform"]
+        tf["terraform.yml<br/>Checkov scan, then fmt, validate, plan, apply"]
         dock["docker.yml<br/>build, Trivy scan, push to ECR,<br/>update image tag in manifest"]
     end
 
@@ -175,7 +174,6 @@ flowchart TB
 
     dev --> repo
     repo -->|"changes in terraform/"| tf
-    repo -->|"changes in terraform/"| sec
     repo -->|"changes in vikunja/"| dock
 
     tf <-->|"state and lock"| s3
