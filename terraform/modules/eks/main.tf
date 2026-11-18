@@ -182,3 +182,30 @@ resource "aws_eks_access_policy_association" "console_viewer" {
     type = "cluster"
   }
 }
+
+# Security group rule for Traefik.
+# EKS creates a cluster security group and attaches it to the control plane and
+# the worker nodes. It already allows all traffic between its members
+# (node <-> node, control plane <-> node) and all outbound traffic.
+# The only extra rule needed is letting the Network Load Balancer reach
+# Traefik's container ports. The NLB uses IP targets, so it forwards traffic
+# straight to the pods, from addresses inside the VPC.
+locals {
+  cluster_security_group_id = aws_eks_cluster.this.vpc_config[0].cluster_security_group_id
+
+  traefik_ports = {
+    web       = 8000 # HTTP  (also used for Let's Encrypt HTTP-01 challenges)
+    websecure = 8443 # HTTPS
+  }
+}
+
+resource "aws_vpc_security_group_ingress_rule" "traefik_from_vpc" {
+  for_each = local.traefik_ports
+
+  security_group_id = local.cluster_security_group_id
+  description       = "Traefik ${each.key} traffic from the NLB inside the VPC"
+  cidr_ipv4         = var.vpc_cidr
+  ip_protocol       = "tcp"
+  from_port         = each.value
+  to_port           = each.value
+}

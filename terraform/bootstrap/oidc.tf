@@ -129,6 +129,8 @@ data "aws_iam_policy_document" "github_terraform" {
       "ec2:DescribeNetworkInterfaces",
       "ec2:DescribeRouteTables",
       "ec2:DescribeSecurityGroups",
+      "ec2:DescribeSecurityGroupRules",
+      "ec2:ModifySecurityGroupRules",
       "ec2:DescribeSubnets",
       "ec2:DescribeTags",
       "ec2:DescribeVpcs",
