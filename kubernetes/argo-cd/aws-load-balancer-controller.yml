@@ -18,7 +18,11 @@ spec:
           value: eu-west-2
         # Replace with the vpc_id from `terraform output vpc_id` after each build
         - name: vpcId
+<<<<<<< HEAD
           value: VPC_ID
+=======
+          value: vpc-0d8648989218ffb4b
+>>>>>>> 166924b (update: new vpc_id)
         - name: serviceAccount.create
           value: "true"
         - name: serviceAccount.name
