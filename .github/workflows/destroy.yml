@@ -2,14 +2,26 @@ name: Destroy
 
 on:
   workflow_dispatch:
+    inputs:
+      confirm:
+        description: 'Type "destroy" to confirm. This deletes the whole environment.'
+        required: true
+        type: string
 
 permissions:
   id-token: write
   contents: read
 
+# Share the lock group with the deploy workflow so they never run at the same time.
+concurrency:
+  group: terraform-deploy
+  cancel-in-progress: false
+
 jobs:
   destroy:
     runs-on: ubuntu-latest
+    if: inputs.confirm == 'destroy'
+    timeout-minutes: 45
 
     defaults:
       run:
@@ -17,6 +29,7 @@ jobs:
 
     env:
       AWS_REGION: eu-west-2
+      CLUSTER_NAME: eks-cluster
 
     steps:
       - name: Checkout repository
@@ -30,6 +43,42 @@ jobs:
 
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v4
+
+      # Skip the cluster cleanup if the cluster is already gone.
+      - name: Check whether the cluster exists
+        id: cluster
+        run: |
+          if aws eks describe-cluster --name "$CLUSTER_NAME" > /dev/null 2>&1; then
+            echo "exists=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "exists=false" >> "$GITHUB_OUTPUT"
+            echo "Cluster not found, skipping Kubernetes cleanup"
+          fi
+
+      - name: Connect to the cluster
+        if: steps.cluster.outputs.exists == 'true'
+        run: aws eks update-kubeconfig --name "$CLUSTER_NAME" --region "$AWS_REGION"
+
+      # Terraform did not create the load balancer (the AWS Load Balancer Controller did),
+      # so it must be removed first or the VPC cannot be deleted.
+      - name: Stop ArgoCD from recreating resources
+        if: steps.cluster.outputs.exists == 'true'
+        run: |
+          # root-app first, then every child app. Deleting an app does not delete what it
+          # deployed, so the load balancer controller keeps running for the next step.
+          # "|| true" covers the case where ArgoCD was never installed.
+          kubectl delete application root-app -n argocd --ignore-not-found || true
+          kubectl delete applications --all -n argocd --ignore-not-found || true
+
+      - name: Delete the load balancer
+        if: steps.cluster.outputs.exists == 'true'
+        run: |
+          # Deleting the namespace deletes Traefik's LoadBalancer Service. Kubernetes waits
+          # until the controller has removed the AWS load balancer before finishing.
+          kubectl delete namespace traefik --ignore-not-found --timeout=10m
+
+          # Give AWS a moment to release the network interfaces and security groups
+          sleep 60
 
       - name: Terraform init
         run: terraform init -input=false
