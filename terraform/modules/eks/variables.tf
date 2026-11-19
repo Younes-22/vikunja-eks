@@ -3,11 +3,6 @@ variable "private_subnet_ids" {
   type        = list(string)
 }
 
-variable "vpc_id" {
-  description = "ID of the VPC hosting the EKS cluster"
-  type        = string
-}
-
 variable "vpc_cidr" {
   description = "CIDR block of the VPC. Used to allow load balancer traffic to Traefik"
   type        = string
