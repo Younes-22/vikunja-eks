@@ -11,6 +11,15 @@ resource "aws_eks_cluster" "this" {
   role_arn = aws_iam_role.cluster.arn
   version  = "1.35"
 
+  # Send control plane logs (API calls, audit trail, authentication, etc.) to CloudWatch
+  enabled_cluster_log_types = [
+    "api",
+    "audit",
+    "authenticator",
+    "controllerManager",
+    "scheduler"
+  ]
+
   vpc_config {
     subnet_ids              = var.private_subnet_ids
     endpoint_public_access  = true

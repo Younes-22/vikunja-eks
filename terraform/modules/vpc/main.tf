@@ -6,6 +6,17 @@ resource "aws_vpc" "main" {
   }
 }
 
+# Every VPC comes with a default security group that allows all traffic between
+# its members. Nothing here uses it, so this empties it (no rules) so that it
+# cannot be used by accident. Our own resources use dedicated security groups.
+resource "aws_default_security_group" "default" {
+  vpc_id = aws_vpc.main.id
+
+  tags = {
+    Name = "main-default-locked-down"
+  }
+}
+
 resource "aws_internet_gateway" "igw" {
   vpc_id = aws_vpc.main.id
 
