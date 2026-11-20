@@ -175,7 +175,7 @@ Then open `https://eks.labs.<your-domain>`.
   kubectl -n monitoring get secret grafana-admin -o jsonpath='{.data.admin-password}' | base64 -d
   ```
 
-**ArgoCD** is not exposed to the internet on purpose. Reach it through a local tunnel:
+**ArgoCD** is not exposed to the internet on purpose. It can change everything in the cluster, so a public login page is a high-value target. Grafana has a public address because it has an Ingress in `kubernetes/argo-cd/monitoring.yml`. ArgoCD has none. Reach it through a local tunnel:
 
 ```bash
 kubectl port-forward svc/argocd-server -n argocd 8080:443
@@ -222,7 +222,7 @@ Afterwards, check in the AWS console that no EKS cluster, NAT gateway, load bala
 
 ## Known limitations
 
-- ArgoCD is installed with a manual `kubectl apply`, not by Terraform.
+- ArgoCD is installed with a manual `kubectl apply`, not by Terraform. It has no public address by design. Exposing it would need an Ingress with HTTPS, a strong admin password and ideally SSO.
 - The VPC ID and the Grafana admin Secret are manual steps.
 - Grafana and Prometheus data are not persistent, so UI-only changes and metrics history are lost on restart.
 - The Terraform pipeline applies on push without a manual approval step.
