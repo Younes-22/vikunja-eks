@@ -50,6 +50,9 @@ jobs:
         run: |
           if aws eks describe-cluster --name "$CLUSTER_NAME" > /dev/null 2>&1; then
             echo "exists=true" >> "$GITHUB_OUTPUT"
+            VPC_ID=$(aws eks describe-cluster --name "$CLUSTER_NAME" \
+              --query 'cluster.resourcesVpcConfig.vpcId' --output text)
+            echo "vpc_id=$VPC_ID" >> "$GITHUB_OUTPUT"
           else
             echo "exists=false" >> "$GITHUB_OUTPUT"
             echo "Cluster not found, skipping Kubernetes cleanup"
@@ -72,13 +75,35 @@ jobs:
 
       - name: Delete the load balancer
         if: steps.cluster.outputs.exists == 'true'
+        env:
+          VPC_ID: ${{ steps.cluster.outputs.vpc_id }}
         run: |
           # Deleting the namespace deletes Traefik's LoadBalancer Service. Kubernetes waits
           # until the controller has removed the AWS load balancer before finishing.
           kubectl delete namespace traefik --ignore-not-found --timeout=10m
 
-          # Give AWS a moment to release the network interfaces and security groups
-          sleep 60
+          # AWS can take many minutes to release the load balancer's network interfaces,
+          # and they block deleting the subnets. Wait until they are gone (up to 20 min).
+          for i in $(seq 1 60); do
+            COUNT=$(aws ec2 describe-network-interfaces \
+              --filters Name=vpc-id,Values="$VPC_ID" Name=description,Values="ELB*" \
+              --query 'length(NetworkInterfaces)' --output text)
+            [ "$COUNT" = "0" ] && break
+            echo "Waiting for $COUNT load balancer network interface(s) to be released..."
+            sleep 20
+          done
+
+          # The controller can leave its security groups (named k8s-...) behind, and a VPC
+          # with any group left in it cannot be deleted. Remove them. Two passes, because
+          # one of the groups is referenced by the other. Errors are ignored here: if a
+          # group really is stuck, terraform destroy will report it.
+          for pass in 1 2; do
+            for SG in $(aws ec2 describe-security-groups \
+              --filters Name=vpc-id,Values="$VPC_ID" Name=group-name,Values="k8s-*" \
+              --query 'SecurityGroups[].GroupId' --output text); do
+              aws ec2 delete-security-group --group-id "$SG" || true
+            done
+          done
 
       - name: Terraform init
         run: terraform init -input=false
