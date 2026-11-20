@@ -163,7 +163,41 @@ kubectl get applications -n argocd          # all should be Synced and Healthy
 kubectl get certificate                     # vikunja-tls should be Ready
 ```
 
-Then open `https://eks.labs.<your-domain>`. Grafana is at `https://grafana.labs.<your-domain>`.
+Then open `https://eks.labs.<your-domain>`.
+
+### 10. Open ArgoCD and Grafana
+
+**Grafana** has a public address with HTTPS: `https://grafana.labs.<your-domain>`.
+
+- Username: `admin`
+- Password: the one you chose in step 7. To read it back:
+  ```bash
+  kubectl -n monitoring get secret grafana-admin -o jsonpath='{.data.admin-password}' | base64 -d
+  ```
+
+**ArgoCD** is not exposed to the internet on purpose. Reach it through a local tunnel:
+
+```bash
+kubectl port-forward svc/argocd-server -n argocd 8080:443
+```
+
+Leave that running and open `https://localhost:8080` (accept the browser's certificate warning, the certificate is self-signed).
+
+- Username: `admin`
+- Password: generated during install. Read it with:
+  ```bash
+  kubectl -n argocd get secret argocd-initial-admin-secret -o jsonpath='{.data.password}' | base64 -d
+  ```
+
+In ArgoCD you can see every application as a tree of Kubernetes objects, their sync status and health, and the Git commit each one is running.
+
+If the Grafana address does not work yet (for example the certificate is still being issued), you can reach it the same way:
+
+```bash
+kubectl port-forward svc/monitoring-grafana -n monitoring 3000:80
+```
+
+Then open `http://localhost:3000`.
 
 ## Monitoring
 
