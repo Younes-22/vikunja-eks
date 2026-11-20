@@ -39,7 +39,7 @@ AWS (EKS, VPC, Route 53, ECR, S3, IAM) · Terraform · Kubernetes · ArgoCD · H
 |---|---|---|
 | [`terraform.yml`](.github/workflows/terraform.yml) | Changes in `terraform/` | Scans the Terraform with Checkov and TFLint first. If those pass: format check, validate, plan, apply. State is stored remotely in S3. |
 | [`docker.yml`](.github/workflows/docker.yml) | Changes in `vikunja/` | Builds the image, scans it with Trivy (fails on HIGH or CRITICAL), pushes it to ECR, then updates the image tag in the Kubernetes manifest. |
-| [`destroy.yml`](.github/workflows/destroy.yml) | Manual | Runs `terraform destroy`. |
+| [`destroy.yml`](.github/workflows/destroy.yml) | Manual (type `destroy` to confirm) | Removes the load balancer and its leftovers created inside the cluster, then runs `terraform destroy`. |
 
 ## Repository layout
 
@@ -173,16 +173,18 @@ Grafana ships with the standard Kubernetes dashboards for cluster, node, namespa
 
 The cluster costs money while it runs (NAT gateway, load balancer, nodes). To remove it:
 
-1. Stop ArgoCD from recreating things, then remove the load balancer so AWS cleans it up properly:
-   ```bash
-   kubectl delete -f kubernetes/root-app.yml
-   kubectl delete applications --all -n argocd
-   kubectl delete namespace traefik
-   ```
-   Wait until the load balancer has disappeared from the EC2 console (Load Balancers). If it is still there, `terraform destroy` will hang on the VPC.
-2. Delete the DNS records that ExternalDNS created in the Route 53 zone (the `eks`, `grafana` and TXT records). Route 53 will not delete a zone that still has records.
-3. Run the **Destroy** workflow.
-4. Optionally, run `terraform destroy` in `terraform/bootstrap` to remove the state bucket and ECR repository.
+1. In GitHub, go to Actions → **Destroy** → Run workflow, and type `destroy` to confirm.
+2. The workflow does the cleanup that Terraform cannot do on its own. The load balancer and its security groups were created by a controller inside the cluster, not by Terraform, and they block the VPC from being deleted. In order, it:
+   - deletes the ArgoCD applications so nothing is recreated
+   - deletes the `traefik` namespace, which makes the load balancer controller remove the load balancer
+   - waits until AWS has released the load balancer's network interfaces
+   - removes any leftover `k8s-*` security groups
+   - runs `terraform destroy`
+3. Delete the DNS records that ExternalDNS created in the Route 53 zone (`eks`, `grafana` and the TXT records), either before or after the run. Route 53 will not delete a zone that still has records, so without this the run fails at the very last step (the zone). Everything else is already gone by then.
+4. If the zone is destroyed, the next build gets new name servers. Update the `labs` NS records in your DNS provider.
+5. Optionally, run `terraform destroy` in `terraform/bootstrap` to remove the state bucket and ECR repository.
+
+Afterwards, check in the AWS console that no EKS cluster, NAT gateway, load balancer or Elastic IP remains.
 
 ## Known limitations
 
