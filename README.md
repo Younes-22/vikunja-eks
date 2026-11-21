@@ -6,7 +6,22 @@ Live at **https://eks.labs.younesblog.org** when the cluster is running.
 
 ## Architecture
 
+![Architecture diagram: users reach the app through Route 53, a load balancer and Traefik inside an EKS cluster on AWS](docs/images/architecture.png)
 
+
+## Screenshots
+
+**Vikunja**, running on the cluster at `https://eks.labs.younesblog.org` with a Let's Encrypt certificate:
+
+![Vikunja login page served over HTTPS](docs/images/vikunja.png)
+
+**Grafana**, showing cluster resource usage from Prometheus:
+
+![Grafana Kubernetes compute resources dashboard](docs/images/grafana.png)
+
+**ArgoCD**, with every application Synced and Healthy:
+
+![ArgoCD applications all synced and healthy](docs/images/argocd.png)
 
 ## What this project demonstrates
 
@@ -56,7 +71,7 @@ AWS (EKS, VPC, Route 53, ECR, S3, IAM) · Terraform · Kubernetes · ArgoCD · H
 │   ├── app/              # Vikunja Deployment, Service and Ingress
 │   └── platform/         # Let's Encrypt ClusterIssuer
 ├── vikunja/              # Application source and Dockerfile
-├── docs/                 # Architecture notes and diagrams
+├── docs/images/          # Architecture diagram and screenshots
 └── .github/workflows/    # CI/CD pipelines
 ```
 
