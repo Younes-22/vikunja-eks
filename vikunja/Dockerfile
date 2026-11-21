@@ -54,8 +54,6 @@ RUN go install github.com/magefile/mage@latest && \
 
 # Stage 3: Run the application
 
-# Stage 3: Run the application
-
 # Use a lightweight Alpine image for the runtime
 FROM alpine:3.22
 
